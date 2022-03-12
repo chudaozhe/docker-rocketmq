@@ -1,0 +1,47 @@
+version: "3.4"
+# 使用外部网络
+# docker network create server_web-network
+networks:
+  server_web-network:
+    external: true
+
+services:
+  namesrv:
+    image: chudaozhe/rocketmq:4.9.3-alpine
+    container_name: namesrv
+    restart: always
+    tty: true
+    command: sh mqnamesrv
+    ports:
+      - 9876:9876
+    networks:
+      - server_web-network
+
+  broker:
+    image: chudaozhe/rocketmq:4.9.3-alpine
+    container_name: broker
+    restart: always
+    tty: true
+    volumes:
+      - ./broker/conf/broker.conf:/home/rocketmq/rocketmq-4.9.3/conf/broker.conf
+      - ../log/rocketmq:/home/rocketmq/logs
+      - ../apps/rocketmq/store:/home/rocketmq/store
+    command: sh mqbroker -n namesrv:9876 -c ../conf/broker.conf
+    ports:
+      - 10909:10909
+      - 10911:10911
+      - 10912:10912
+    networks:
+      - server_web-network
+
+  dashboard:
+#    https://github.com/apache/rocketmq-dashboard
+    image: chudaozhe/rocketmq-dashboard:1.0.0-centos
+    container_name: rocketmq-dashboard
+    restart: always
+    tty: true
+    ports:
+      - 6765:8080
+    networks:
+      - server_web-network
+
